@@ -7,11 +7,14 @@ import TextInput from '../common/text_input.jsx';
 import ArticleFinderRow from './article_finder_row.jsx';
 import List from '../common/list.jsx';
 import Loading from '../common/loading.jsx';
+import ArticlesNavbar from '../articles/articles_navbar.jsx';
 
 import { STUDENT_ROLE } from "../../constants";
 import { ORESSupportedWiki, PageAssessmentSupportedWiki } from '../../utils/article_finder_language_mappings.js';
 import { fetchCategoryResults, fetchKeywordResults, updateFields, sortArticleFinder, resetArticleFinder } from '../../actions/article_finder_action.js';
 import { fetchAssignments, addAssignment, deleteAssignment } from '../../actions/assignment_actions.js';
+import { updateArticlesCurrent } from '../../actions/ui_actions_redux.js';
+
 import { getFilteredArticleFinder } from '../../selectors';
 
 const ArticleFinder = createReactClass({
@@ -37,6 +40,7 @@ const ArticleFinder = createReactClass({
     if (this.props.course_id && this.props.loadingAssignments) {
       this.props.fetchAssignments(this.props.course_id);
     }
+    this.props.updateArticlesCurrent('articles-finder');
     return this.updateFields('home_wiki', this.props.course.home_wiki);
   },
 
@@ -316,40 +320,50 @@ const ArticleFinder = createReactClass({
         <a className="button small pull-right" href={`/feedback?subject=Article Finder — ${this.props.search_term}`} target="_blank">How did the article finder work for you?</a>
       );
     }
+    let articlesNavbar;
+    if (this.props.course_id) {
+      articlesNavbar = (<ArticlesNavbar
+        current_user={this.props.current_user}
+        course_id={this.props.course_id}
+      />);
+    }
 
     return (
-      <div className="container">
-        <header>
-          <h1 className="title">{I18n.t('article_finder.article_finder')}</h1>
-          <div>
-            {I18n.t('article_finder.subheading_message')}
-          </div>
-        </header>
-        <div className="article-finder-form">
-          <div className="search-bar">
+      <div className="article-finder">
+        <div className={`container ${this.props.course_id ? 'smaller-finder' : ''}`}>
+          <header>
+            <h1 className="title">{I18n.t('article_finder.article_finder')}</h1>
             <div>
-              {searchTerm}
-              {searchType}
+              {I18n.t('article_finder.subheading_message')}
             </div>
-            <button className="button dark" onClick={this.searchArticles}>{I18n.t('article_finder.submit')}</button>
+          </header>
+          <div className="article-finder-form">
+            <div className="search-bar">
+              <div>
+                {searchTerm}
+                {searchType}
+              </div>
+              <button className="button dark" onClick={this.searchArticles}>{I18n.t('article_finder.submit')}</button>
+            </div>
           </div>
-        </div>
-        {feedbackButton}
-        {filterBlock}
-        <div className="article-finder-stats horizontal-flex">
-          {searchStats}
-          <div>
-            {fetchingLoader}
+          {feedbackButton}
+          {filterBlock}
+          <div className="article-finder-stats horizontal-flex">
+            {searchStats}
+            <div>
+              {fetchingLoader}
+            </div>
+            <div>
+              {fetchMoreButton}
+            </div>
           </div>
-          <div>
+          {loader}
+          {list}
+          <div className="py2 text-center">
             {fetchMoreButton}
           </div>
         </div>
-        {loader}
-        {list}
-        <div className="py2 text-center">
-          {fetchMoreButton}
-        </div>
+        {articlesNavbar}
       </div>
       );
   }
@@ -382,6 +396,7 @@ const mapDispatchToProps = {
   fetchKeywordResults: fetchKeywordResults,
   deleteAssignment: deleteAssignment,
   resetArticleFinder: resetArticleFinder,
+  updateArticlesCurrent: updateArticlesCurrent,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ArticleFinder);

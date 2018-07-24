@@ -2,14 +2,18 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import createReactClass from 'create-react-class';
 import { connect } from "react-redux";
+import _ from 'lodash';
 
 import ArticleList from './article_list.jsx';
 import AssignmentList from '../assignments/assignment_list.jsx';
 import AvailableArticles from '../articles/available_articles.jsx';
 import CourseOresPlot from './course_ores_plot.jsx';
 import CategoryHandler from '../categories/category_handler.jsx';
+import ArticlesNavbar from './articles_navbar.jsx';
+
 import { fetchArticles, sortArticles, filterArticles } from "../../actions/articles_actions.js";
 import { fetchAssignments } from '../../actions/assignment_actions';
+import { updateArticlesCurrent } from '../../actions/ui_actions_redux.js';
 import { getWikiArticles } from '../../selectors';
 
 const ArticlesHandler = createReactClass({
@@ -37,6 +41,10 @@ const ArticlesHandler = createReactClass({
     }
   },
 
+  componentDidMount() {
+    return window.addEventListener('scroll', _.throttle(this.handleScroll, 150));
+  },
+
   onChangeFilter(e) {
     const value = e.target.value.split('.');
     if (value.length > 1) {
@@ -51,6 +59,20 @@ const ArticlesHandler = createReactClass({
 
   sortSelect(e) {
     return this.props.sortArticles(e.target.value);
+  },
+
+  handleScroll() {
+    if (this.refs.articlesEdited && !this.props.articlesUi.scrollDebounce) {
+        const editedArticles = this.refs.articlesEdited.getBoundingClientRect();
+        const assignedArticles = this.refs.articlesAssigned.getBoundingClientRect();
+        if (editedArticles.bottom - 100 > 0) {
+          return this.props.updateArticlesCurrent('articles-edited');
+        }
+        else if (assignedArticles.bottom - 100 > 0) {
+          return this.props.updateArticlesCurrent('articles-assigned');
+        }
+        return this.props.updateArticlesCurrent('available-articles');
+    }
   },
 
   render() {
@@ -100,32 +122,44 @@ const ArticlesHandler = createReactClass({
     }
 
     return (
-      <div>
-        <div id="articles">
-          <div className="section-header">
-            {header}
-            <CourseOresPlot course={this.props.course} />
-            {filterWikis}
-            <div className="sort-select">
-              <select className="sorts" name="sorts" onChange={this.sortSelect}>
-                <option value="rating_num">{I18n.t('articles.rating')}</option>
-                <option value="title">{I18n.t('articles.title')}</option>
-                <option value="character_sum">{I18n.t('metrics.char_added')}</option>
-                <option value="view_count">{I18n.t('metrics.view')}</option>
-              </select>
+      <div className="articles-content">
+        <div className="articles-list">
+          <div id="articles" ref="articlesEdited">
+            <a id="articles-edited" className="articles__anchor" />
+            <div className="section-header">
+              {header}
+              <CourseOresPlot course={this.props.course} />
+              {filterWikis}
+              <div className="sort-select">
+                <select className="sorts" name="sorts" onChange={this.sortSelect}>
+                  <option value="rating_num">{I18n.t('articles.rating')}</option>
+                  <option value="title">{I18n.t('articles.title')}</option>
+                  <option value="character_sum">{I18n.t('metrics.char_added')}</option>
+                  <option value="view_count">{I18n.t('metrics.view')}</option>
+                </select>
+              </div>
             </div>
+            <ArticleList articles={this.props.articles} sortBy={this.props.sortArticles} {...this.props} />
+            {showMoreButton}
           </div>
-          <ArticleList articles={this.props.articles} sortBy={this.props.sortArticles} {...this.props} />
-          {showMoreButton}
-        </div>
-        <div id="assignments" className="mt4">
-          <div className="section-header">
-            <h3>{I18n.t('articles.assigned')}</h3>
+          <div id="assignments" ref="articlesAssigned">
+            <a id="articles-assigned" className="articles__anchor" />
+            <div className="section-header">
+              <h3>{I18n.t('articles.assigned')}</h3>
+            </div>
+            <AssignmentList {...this.props} />
           </div>
-          <AssignmentList {...this.props} />
+          <div ref="availableArticles">
+            <a id="available-articles" className="articles__anchor" />
+            <AvailableArticles {...this.props} />
+          </div>
+          {categories}
         </div>
-        <AvailableArticles {...this.props} />
-        {categories}
+        <ArticlesNavbar
+          current_user={this.props.current_user}
+          course_id={this.props.course_id}
+          toggleDebounce={this.toggleDebounce}
+        />
       </div>
     );
   }
@@ -139,14 +173,16 @@ const mapStateToProps = state => ({
   wikidataLabels: state.wikidataLabels.labels,
   loadingArticles: state.articles.loading,
   assignments: state.assignments.assignments,
-  loadingAssignments: state.assignments.loading
+  loadingAssignments: state.assignments.loading,
+  articlesUi: state.ui.articles,
 });
 
 const mapDispatchToProps = {
   fetchArticles,
   sortArticles,
   filterArticles,
-  fetchAssignments
+  fetchAssignments,
+  updateArticlesCurrent,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(ArticlesHandler);
