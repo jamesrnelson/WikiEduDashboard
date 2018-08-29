@@ -6,8 +6,6 @@ import ReactCSSTG from 'react-transition-group/CSSTransitionGroup';
 import Block from './block.jsx';
 import OrderableBlock from './orderable_block.jsx';
 import BlockActions from '../../actions/block_actions.js';
-import GradeableStore from '../../stores/gradeable_store.js';
-
 
 import DateCalculator from '../../utils/date_calculator.js';
 
@@ -52,10 +50,10 @@ const Week = createReactClass({
   },
   _scrollToAddedBlock() {
     const wk = document.getElementsByClassName(`week-${this.props.index}`)[0];
-    const scrollTop = window.scrollTop || document.body.scrollTop;
+    const scrollTop = window.scrollY || document.body.scrollTop;
     const bottom = Math.abs(__guard__(wk, x => x.getBoundingClientRect().bottom));
     const elBottom = (bottom + scrollTop) - 50;
-    return window.scrollTo(0, elBottom);
+    return window.scrollTo({ top: elBottom, behavior: 'smooth' });
   },
   render() {
     let style;
@@ -78,9 +76,6 @@ const Week = createReactClass({
 
 
     const blocks = this.props.blocks.map((block, i) => {
-      if (block.deleted) {
-        return null;
-      }
       // If in reorderable mode
       if (this.props.reorderable) {
         const orderableBlock = value => {
@@ -127,7 +122,6 @@ const Week = createReactClass({
           block={block}
           key={block.id}
           editPermissions={this.props.edit_permissions}
-          gradeable={GradeableStore.getGradeableByBlock(block.id)}
           deleteBlock={this.deleteBlock.bind(this, block.id)}
           week_index={this.props.index}
           weekStart={dateCalc.startDate()}

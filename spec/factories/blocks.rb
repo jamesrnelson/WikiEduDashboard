@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: blocks
@@ -15,12 +14,13 @@
 #  order               :integer
 #  due_date            :date
 #  training_module_ids :text(65535)
+#  points              :integer
 #
 
 FactoryBot.define do
   factory :block do
-    kind Block::KINDS['assignment']
-    content 'MyString'
-    order 0
+    kind { Block::KINDS['assignment'] }
+    content { 'MyString' }
+    order { 0 }
   end
 end

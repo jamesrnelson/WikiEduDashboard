@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: blocks
@@ -15,6 +14,7 @@
 #  order               :integer
 #  due_date            :date
 #  training_module_ids :text(65535)
+#  points              :integer
 #
 
 require_dependency "#{Rails.root}/lib/block_date_manager"
@@ -34,6 +34,8 @@ class Block < ApplicationRecord
     'custom'     => 3,
     'handouts'   => 4
   }.freeze
+
+  DEFAULT_POINTS = 10
 
   def training_modules
     training_module_ids.collect { |id| TrainingModule.find(id) }

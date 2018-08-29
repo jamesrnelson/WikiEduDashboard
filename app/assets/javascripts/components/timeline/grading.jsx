@@ -4,54 +4,68 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 import Gradeable from './gradeable.jsx';
-import BlockStore from '../../stores/block_store.js';
 
 const Grading = createReactClass({
   displayName: 'Grading',
 
   propTypes: {
-    gradeables: PropTypes.array,
+    weeks: PropTypes.array,
+    blocks: PropTypes.array,
     editable: PropTypes.bool,
     controls: PropTypes.func
   },
 
   render() {
-    const total = _.sumBy(this.props.gradeables, 'points');
-    const gradeables = this.props.gradeables.map((gradeable) => {
-      const block = BlockStore.getBlock(gradeable.gradeable_item_id);
+    const gradeableBlocks = [];
+    // The weeks prop has the order of the weeks, and the blocks within it.
+    // However, the blocks within the weeks prop are not updated except when
+    // the timeline is received from the server.
+    // So to re-render when block details are changed, we need to use the weeks
+    // prop to determine the order, but use the blocks prop to actually build
+    // the rendered elements.
+    // FIXME: when the Timeline gets converted to Redux, we can handle this kind
+    // of thing in the reducers and/or via selectors.
+    this.props.weeks.forEach(week => {
+      week.blocks.forEach(block => {
+        if (!block.points) { return; }
+        const blocksPropBlock = this.props.blocks.find(propsBlock => block.id === propsBlock.id);
+        // Handle blocks that got deleted.
+        if (!blocksPropBlock) { return; }
+        blocksPropBlock.grading_order = `${week.order}${block.order}`;
+        gradeableBlocks.push(blocksPropBlock);
+      });
+    });
+
+    if (!gradeableBlocks.length) {
+      return <div />;
+    }
+
+    gradeableBlocks.sort((a, b) => {
+      if (!a.grading_order || !b.grading_order) { return 1; }
+      return a.grading_order - b.grading_order;
+    });
+
+    const total = _.sumBy(gradeableBlocks, 'points');
+
+    const gradeables = gradeableBlocks.map((block) => {
       return (
         <Gradeable
-          gradeable={gradeable}
+          key={block.id}
           block={block}
-          key={gradeable.id}
           editable={this.props.editable}
-          total={total}
         />
       );
     });
-    gradeables.sort((a, b) => {
-      if (!a.props.gradeable || !b.props.gradeable) { return 1; }
-      return a.props.gradeable.order - b.props.gradeable.order;
-    });
-    let noGradeables;
-    if (!gradeables.length) {
-      noGradeables = (
-        <li className="row view-all">
-          <div><p>{I18n.t('timeline.gradeables_none')}</p></div>
-        </li>
-      );
-    }
 
     return (
       <div className="grading__grading-container">
         <a name="grading" />
         <div className="section-header timeline__grading-container">
           <h3>{I18n.t('timeline.grading_header', { total })}</h3>
-          {this.props.controls(null, this.props.gradeables.length < 1)}
+          {this.props.controls(null, gradeables.length < 1)}
         </div>
         <ul className="list-unstyled timeline__grading-container">
           {gradeables}
-          {noGradeables}
         </ul>
       </div>
     );

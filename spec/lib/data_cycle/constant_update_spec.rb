@@ -19,6 +19,7 @@ describe ConstantUpdate do
       expect(DiscretionarySanctionsMonitor).to receive(:create_alerts_for_course_articles)
       expect(DYKNominationMonitor).to receive(:create_alerts_for_course_articles)
       expect(GANominationMonitor).to receive(:create_alerts_for_course_articles)
+      expect(BlockedUserMonitor).to receive(:create_alerts_for_recently_blocked_users)
       expect_any_instance_of(CourseAlertManager).to receive(:create_no_students_alerts)
       expect_any_instance_of(CourseAlertManager).to receive(:create_untrained_students_alerts)
       expect_any_instance_of(CourseAlertManager).to receive(:create_productive_course_alerts)
@@ -29,7 +30,7 @@ describe ConstantUpdate do
       expect_any_instance_of(SurveyResponseAlertManager).to receive(:create_alerts)
       expect(UpdateLogger).to receive(:update_settings_record)
       expect(Raven).to receive(:capture_message).and_call_original
-      update = ConstantUpdate.new
+      update = described_class.new
       sentry_logs = update.instance_variable_get(:@sentry_logs)
       expect(sentry_logs.grep(/Generating AfD alerts/).any?).to eq(true)
     end
@@ -38,7 +39,7 @@ describe ConstantUpdate do
       allow(Raven).to receive(:capture_message)
       allow(PlagiabotImporter).to receive(:find_recent_plagiarism)
         .and_raise(StandardError)
-      expect { ConstantUpdate.new }.to raise_error(StandardError)
+      expect { described_class.new }.to raise_error(StandardError)
       expect(Raven).to have_received(:capture_message).with('Constant update failed.', anything)
     end
   end

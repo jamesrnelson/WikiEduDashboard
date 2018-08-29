@@ -1,6 +1,5 @@
 import McFly from 'mcfly';
 import BlockStore from './block_store.js';
-import GradeableStore from './gradeable_store.js';
 const Flux = new McFly();
 
 
@@ -30,7 +29,8 @@ const addWeek = () =>
   setWeek({
     id: Date.now(), // could THEORETICALLY collide but highly unlikely
     is_new: true, // remove ids from objects with is_new when persisting
-    blocks: []
+    blocks: [],
+    order: WeekStore.getWeeks().length + 1
   });
 const removeWeek = function (weekId) {
   delete _weeks[weekId];
@@ -69,7 +69,7 @@ const WeekStore = Flux.createStore(
     const { data } = payload;
     switch (payload.actionType) {
       case 'RECEIVE_TIMELINE': case 'SAVED_TIMELINE': case 'WIZARD_SUBMITTED':
-        Flux.dispatcher.waitFor([BlockStore.dispatcherID, GradeableStore.dispatcherID]);
+        Flux.dispatcher.waitFor([BlockStore.dispatcherID]);
         _weeks = {};
         setWeeks(data.course.weeks, true);
         break;
